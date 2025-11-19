@@ -69,6 +69,7 @@ group_titles = {
 	"Arabia": "Arabia",
 	"Balkans": "Balkans",
 	"Bulgaria": "Bulgaria",
+	"Croatia": "Croazia",
 	"France": "France",
 	"Germany": "Germany",
 	"Italy": "Italy",

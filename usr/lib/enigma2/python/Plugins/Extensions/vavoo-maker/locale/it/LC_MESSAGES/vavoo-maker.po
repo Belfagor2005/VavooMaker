@@ -8,74 +8,74 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-26 15:29+0100\n"
-"PO-Revision-Date: 2025-03-26 15:29+0100\n"
+"POT-Creation-Date: 2025-11-19 15:06+0100\n"
+"PO-Revision-Date: 2025-11-19 15:06+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: it\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.5\n"
+"X-Generator: Poedit 3.8\n"
 "X-Poedit-Basepath: ../../..\n"
 "X-Poedit-SearchPath-0: __init__.py\n"
 "X-Poedit-SearchPath-1: plugin.py\n"
 
-#: plugin.py:72
+#: plugin.py:73
 msgid "country"
 msgstr "Paese"
 
-#: plugin.py:88
+#: plugin.py:92
 msgid "vavoo"
 msgstr ""
 
-#: plugin.py:378
+#: plugin.py:392
 msgid "vavoo playlists"
 msgstr ""
 
-#: plugin.py:384
+#: plugin.py:398
 msgid "Cancel"
 msgstr "Annulla"
 
-#: plugin.py:385
+#: plugin.py:399
 msgid "Create bouquets"
 msgstr "Crea Bouquets"
 
-#: plugin.py:386
+#: plugin.py:400
 msgid "Toggle all"
 msgstr "Attiva/disattiva"
 
-#: plugin.py:387
+#: plugin.py:401
 msgid "Remove"
 msgstr "Rimuovere"
 
-#: plugin.py:403
+#: plugin.py:417
 msgid "Downloading playlist - Please wait!"
 msgstr "Download della playlist - Attendi!"
 
-#: plugin.py:444
+#: plugin.py:458
 msgid "Creating bouquets"
 msgstr "Creazione Bouquets"
 
-#: plugin.py:445
+#: plugin.py:459
 msgid "Creating bouquets. This may take some time. Please be patient."
 msgstr ""
 "Creazione di bouquet. Potrebbe volerci un po' di tempo. Si prega di essere "
 "pazienti."
 
-#: plugin.py:464
+#: plugin.py:478
 msgid "Please select the bouquets you wish to create."
 msgstr "Seleziona i bouquet che desideri creare."
 
-#: plugin.py:469
+#: plugin.py:483
 msgid "Do you want to create the bouquets?"
 msgstr "Vuoi creare i bouquet?"
 
-#: plugin.py:482
+#: plugin.py:496
 msgid "Really close without saving settings?"
 msgstr "Davvero chiudere senza salvare le impostazioni?"
 
-#: plugin.py:491
+#: plugin.py:505
 msgid ""
 "Reloading Bouquets and Services...\n"
 "\n"
@@ -85,14 +85,14 @@ msgstr ""
 "\n"
 "Tutti i bouquet preferiti di Vavoo sono stati rimossi."
 
-#: plugin.py:493
+#: plugin.py:507
 msgid "Operation cancelled."
 msgstr "Operazione annullata."
 
-#: plugin.py:498
+#: plugin.py:512
 msgid "Remove all Vavoo Favorite Bouquets?"
 msgstr "Vuoi rimuovere tutti i bouquet preferiti di Vavoo?"
 
-#: plugin.py:518
+#: plugin.py:532
 msgid "Make IPTV bouquets based on Vavoo List Channels"
 msgstr "Crea bouquet IPTV basati sui canali Vavoo originali"

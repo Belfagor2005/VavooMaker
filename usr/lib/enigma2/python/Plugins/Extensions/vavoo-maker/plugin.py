@@ -49,11 +49,11 @@ from os import (
 )
 from requests import get, exceptions
 from shutil import rmtree
-from re import DOTALL  # , compile
+# from re import DOTALL  # , compile
 from time import time
 import json
 import codecs
-
+from sys import version_info
 
 if os_path.exists("/usr/bin/apt-get"):
 	from .SelDMList import SelectionList, SelectionEntryComponent
@@ -74,6 +74,9 @@ choices = {"country": _("country")}
 config.plugins.vavoomaker.current = ConfigSelection(choices=[(x[0], x[1]) for x in choices.items()], default=list(choices.keys())[0])
 for ch in choices:
 	setattr(config.plugins.vavoomaker, ch, ConfigText("", False))
+
+
+PYTHON_VER = version_info.major
 
 
 class vavooFetcher():
@@ -165,76 +168,46 @@ class vavooFetcher():
 		current = self.playlists_processed[config.plugins.vavoomaker.current.value]
 
 		def bouquet_exists(bouquets_file, bouquet_entry):
-			""" Check if the bouquet is already present in the main list"""
+			"""Check if bouquet is already in main list"""
 			if os_path.exists(bouquets_file):
 				with open(bouquets_file, "r") as f:
 					return bouquet_entry in f.read()
 			return False
 
 		for country in sorted([k for k in current.keys() if k in enabled], key=lambda x: group_titles.get(x, x).lower()):
-			"""
-			# bouquet_list = []
-			# if current[country]:  # country not empty (how could it be)
-				# bouquet_list.append("1:64:0:0:0:0:0:0:0:0:%s" % group_titles.get(country, country))
-
-				# for channelname, url in sorted(current[country]):
-					# url = url.strip() + str(app)
-					# bouquet_list.append("4097:0:1:1:1:1:CCCC0000:0:0:0:%s:%s" % (url.replace(":", "%3a"), channelname))
-
-			# if bouquet_list:
-				# bouquet_filename = sanitizeFilename(country).replace(" ", "_").strip().lower()
-				# duplicated_translation = list(group_titles.values()).count(group_titles.get(country, country)) > 1
-				# bouquet_display_name = "Vavoo - %s" % (group_titles.get(country, country))
-
-				# if duplicated_translation:
-					# bouquet_display_name += " - " + choices[config.plugins.vavoomaker.current.value]
-			"""
 			bouquet_list = []
-			if current[country]:  # if the country is not empty
+			if current[country]:
 				bouquet_list.append("#NAME %s" % group_titles.get(country, country))
+
 				for channelname, url in sorted(current[country]):
-					url = url.strip() + str(app)
-					bouquet_list.append("#SERVICE 4097:0:1:1:1:1:CCCC0000:0:0:0:%s:%s" % (url.replace(":", "%3a"), channelname))
+					clean_url = url.strip() + str(app)
+					encoded_url = clean_url.replace(":", "%3a")
+					bouquet_list.append("#SERVICE 4097:0:1:1:1:1:CCCC0000:0:0:0:%s:%s" % (encoded_url, channelname))
+
 			if bouquet_list:
-				bouquet_filename = sanitizeFilename(country).replace(" ", "_").strip().lower()
-				bouquet_path = "/etc/enigma2/userbouquet.vavoo.%s.tv" % bouquet_filename
+				bouquet_filename = "userbouquet.vavoo.%s.tv" % sanitizeFilename(country).replace(" ", "_").strip().lower()
+				bouquet_path = os_path.join("/etc/enigma2", bouquet_filename)
 
-				with open(bouquet_path, "w", encoding="utf-8") as f:
-					f.write("\n".join(bouquet_list))
+				try:
+					content = "\n".join(bouquet_list)
+					with open(bouquet_path, "w") as f:
+						if not PYTHON_VER == 3:
+							f.write(content.encode('utf-8'))
+						else:
+							f.write(content)
+				except Exception as e:
+					print("Error writing bouquet:", str(e))
+					continue
 
-			"""
-			# for epg channels compile service reference in folder list channels
-			bouquet_filename = sanitizeFilename(country).replace(" ", "_").strip().lower()
-			bouquet_path = "/etc/enigma2/userbouquet.vavoo.%s.tv" % bouquet_filename
-			filename = PLUGIN_PATH + '/list/userbouquet.vavoo.%s.tv' % bouquet_filename
-			if os_path.exists(filename):
-				key = None
-				with open(filename, "rt") as fin:
-					data = fin.read()
-					regexcat = '#SERVICE.*?vavoo_auth=(.+?)#User'
-					match = compile(regexcat, flags=DOTALL).findall(data)
-					for key in match:
-						key = str(app)
-
-				with open(filename, 'r') as f:
-					newlines = []
-					for line in f.readlines():
-						newlines.append(line.replace(key, app))
-
-				with open(bouquet_path, 'w') as f:
-					for line in newlines:
-						f.write(line)
-
-				# with open(bouquet_path, "w", encoding="utf-8") as f:
-					# for line in newlines:
-						# f.write(line)
-			"""
 			bouquets_file = "/etc/enigma2/bouquets.tv"
-			bouquet_entry = '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "userbouquet.vavoo.%s.tv" ORDER BY bouquet\n' % bouquet_filename
+			bouquet_entry = '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "%s" ORDER BY bouquet\n' % bouquet_filename
 
 			if not bouquet_exists(bouquets_file, bouquet_entry):
-				with open(bouquets_file, "a") as f:
-					f.write(bouquet_entry)
+				try:
+					with open(bouquets_file, "a") as f:
+						f.write(bouquet_entry)
+				except Exception as e:
+					print("Error updating bouquets.tv:", str(e))
 
 		reload_bouquet()
 
