@@ -1,12 +1,39 @@
 #!/bin/sh
 
-echo "Checking for an older version in the system..."
-if [ -d /usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker ]
-then
-rm -rf /usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker > /dev/null 2>&1
-echo "An older version was found and removed"
-echo "Proceeding to installation..."
+#########################################################
+#                                                       #
+#  Vavoo Maker Playlists - Pre-installation Script      #
+#  Version: 1.0                                         #
+#  Created by Lululla (https://github.com/Belfagor2005) #
+#  License: CC BY-NC-SA 4.0                             #
+#  Last Modified: 20251120                              #
+#                                                       #
+#  Usage without proper attribution is prohibited       #
+#########################################################
+
+echo "==================================================="
+echo "    Vavoo Maker Playlists - Pre-installation       "
+echo "==================================================="
+
+# Clean up previous installation
+EXTDIR="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/"
+if [ -d "$EXTDIR" ]; then
+    echo "Removing previous version..."
+    rm -rf "$EXTDIR" > /dev/null 2>&1
+    echo "✓ Old version removed successfully"
 else
-echo "Proceeding to installation..."
+    echo "✓ No previous version found"
 fi
+
+# Clean temporary files
+if [ -d "/tmp/vavoo" ]; then
+    echo "Cleaning temporary files..."
+    rm -rf "/tmp/vavoo" > /dev/null 2>&1
+    echo "✓ Temporary files cleaned"
+fi
+
+echo "==================================================="
+echo "✓ Pre-installation completed successfully"
+echo "==================================================="
+
 exit 0

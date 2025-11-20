@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-19 15:06+0100\n"
-"PO-Revision-Date: 2025-11-19 15:06+0100\n"
+"POT-Creation-Date: 2025-11-20 15:19+0100\n"
+"PO-Revision-Date: 2025-11-20 15:21+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: it\n"
@@ -21,61 +21,69 @@ msgstr ""
 "X-Poedit-SearchPath-0: __init__.py\n"
 "X-Poedit-SearchPath-1: plugin.py\n"
 
-#: plugin.py:73
-msgid "country"
-msgstr "Paese"
+#: plugin.py:111
+msgid "Countries"
+msgstr "Paesi"
 
-#: plugin.py:92
+#: plugin.py:112
+msgid "Categories"
+msgstr "Categorie"
+
+#: plugin.py:139
 msgid "vavoo"
 msgstr ""
 
-#: plugin.py:392
+#: plugin.py:442
 msgid "vavoo playlists"
 msgstr ""
 
-#: plugin.py:398
-msgid "Cancel"
-msgstr "Annulla"
-
-#: plugin.py:399
-msgid "Create bouquets"
-msgstr "Crea Bouquets"
-
-#: plugin.py:400
-msgid "Toggle all"
-msgstr "Attiva/disattiva"
-
-#: plugin.py:401
-msgid "Remove"
-msgstr "Rimuovere"
-
-#: plugin.py:417
+#: plugin.py:446
 msgid "Downloading playlist - Please wait!"
 msgstr "Download della playlist - Attendi!"
 
-#: plugin.py:458
+#: plugin.py:448 plugin.py:611
+msgid "Cancel"
+msgstr "Annulla"
+
+#: plugin.py:450
+msgid "Toggle all"
+msgstr "Attiva/Disattiva"
+
+#: plugin.py:451
+msgid "Remove"
+msgstr "Rimuovere"
+
+#: plugin.py:503
+msgid "Select Items for Export"
+msgstr "Seleziona gli elementi per l'esportazione"
+
+#: plugin.py:504
+msgid "Create bouquets"
+msgstr "Crea Bouquets"
+
+#: plugin.py:517
 msgid "Creating bouquets"
 msgstr "Creazione Bouquets"
 
-#: plugin.py:459
+#: plugin.py:518
 msgid "Creating bouquets. This may take some time. Please be patient."
 msgstr ""
 "Creazione di bouquet. Potrebbe volerci un po' di tempo. Si prega di essere "
 "pazienti."
 
-#: plugin.py:478
+#: plugin.py:537
 msgid "Please select the bouquets you wish to create."
 msgstr "Seleziona i bouquet che desideri creare."
 
-#: plugin.py:483
+#: plugin.py:542
 msgid "Do you want to create the bouquets?"
 msgstr "Vuoi creare i bouquet?"
 
-#: plugin.py:496
+#: plugin.py:556
 msgid "Really close without saving settings?"
 msgstr "Davvero chiudere senza salvare le impostazioni?"
 
-#: plugin.py:505
+#: plugin.py:566
 msgid ""
 "Reloading Bouquets and Services...\n"
 "\n"
@@ -85,14 +93,55 @@ msgstr ""
 "\n"
 "Tutti i bouquet preferiti di Vavoo sono stati rimossi."
 
-#: plugin.py:507
+#: plugin.py:568
 msgid "Operation cancelled."
 msgstr "Operazione annullata."
 
-#: plugin.py:512
+#: plugin.py:573
 msgid "Remove all Vavoo Favorite Bouquets?"
 msgstr "Vuoi rimuovere tutti i bouquet preferiti di Vavoo?"
 
-#: plugin.py:532
-msgid "Make IPTV bouquets based on Vavoo List Channels"
-msgstr "Crea bouquet IPTV basati sui canali Vavoo originali"
+#: plugin.py:607
+msgid "Select View Type"
+msgstr "Seleziona il tipo di visualizzazione"
+
+#: plugin.py:612
+msgid "OK"
+msgstr ""
+
+#: plugin.py:620
+msgid "View by Countries"
+msgstr "Mostra per Paesi"
+
+#: plugin.py:621
+msgid "View by Categories"
+msgstr "Mostra per Categorie"
+
+#: plugin.py:622
+msgid "Plugin Info"
+msgstr ""
+
+#: plugin.py:652
+#, python-format
+msgid ""
+"Vavoo Maker Playlists v%s\n"
+"\n"
+"Author: %s\n"
+"License: %s\n"
+"Credits: %s\n"
+"\n"
+"Community: Linuxsat-support.com\n"
+"           Corvoboys.org"
+msgstr ""
+"Playlist di Vavoo Maker v%s\n"
+"\n"
+"Autore: %s\n"
+"Licenza: %s\n"
+"Crediti: %s\n"
+"\n"
+"Community: Linuxsat-support.com\n"
+"Corvoboys.org"
+
+#: plugin.py:679
+msgid "Make IPTV bouquets based on Vavoo Team"
+msgstr "Crea bouquet IPTV basati sui canali Vavoo"
