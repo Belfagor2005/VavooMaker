@@ -98,23 +98,56 @@ else:
 
 class AspectManager:
     """Manages aspect ratio settings for the plugin"""
+
     def __init__(self):
-        self.init_aspect = self.get_current_aspect()
-        print("[INFO] Initial aspect ratio:", self.init_aspect)
+        try:
+            self.init_aspect = self.get_current_aspect()
+            print("[INFO] Initial aspect ratio:", self.init_aspect)
+        except Exception as e:
+            print("[ERROR] Failed to initialize aspect manager:", str(e))
+            self.init_aspect = 0  # Fallback
 
     def get_current_aspect(self):
         """Get current aspect ratio setting"""
         try:
-            return int(AVSwitch().getAspectRatioSetting())
-        except Exception as e:
+            aspect = AVSwitch().getAspectRatioSetting()
+            # Assicurati che sia un intero valido
+            return int(aspect) if aspect is not None else 0
+        except (ValueError, TypeError, Exception) as e:
             print("[ERROR] Failed to get aspect ratio:", str(e))
-            return 0
+            return 0  # Default 4:3
+
+    def set_aspect(self, aspect_ratio):
+        """Set aspect ratio based on string (e.g., '16:9', '4:3')"""
+        try:
+            aspect_map = {
+                "4:3": 0,
+                "16:9": 1,
+                "16:10": 2,
+                "auto": 3
+            }
+
+            if aspect_ratio in aspect_map:
+                new_aspect = aspect_map[aspect_ratio]
+                print("[INFO] Setting aspect ratio to:", aspect_ratio, "(", new_aspect, ")")
+                AVSwitch().setAspectRatio(new_aspect)
+                return True
+            else:
+                print("[ERROR] Unknown aspect ratio:", aspect_ratio)
+                return False
+
+        except Exception as e:
+            print("[ERROR] Failed to set aspect ratio:", str(e))
+            return False
 
     def restore_aspect(self):
         """Restore original aspect ratio"""
         try:
-            print("[INFO] Restoring aspect ratio to:", self.init_aspect)
-            AVSwitch().setAspectRatio(self.init_aspect)
+            if hasattr(self, 'init_aspect') and self.init_aspect is not None:
+                print("[INFO] Restoring aspect ratio to:", self.init_aspect)
+                AVSwitch().setAspectRatio(self.init_aspect)
+            else:
+                print("[WARNING] No initial aspect ratio to restore")
         except Exception as e:
             print("[ERROR] Failed to restore aspect ratio:", str(e))
 
