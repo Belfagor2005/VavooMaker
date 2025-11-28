@@ -96,6 +96,18 @@ else:
     unichr_func = chr
 
 
+def trace_error():
+    """error tracing and logging"""
+    import traceback
+    from sys import stdout, stderr
+    try:
+        traceback.print_exc(file=stdout)
+        with open("/tmp/vavoomaker.log", "a", encoding='utf-8') as log_file:
+            traceback.print_exc(file=log_file)
+    except Exception as e:
+        print("Failed to log the error:", e, file=stderr)
+
+
 class AspectManager:
     """Manages aspect ratio settings for the plugin"""
 

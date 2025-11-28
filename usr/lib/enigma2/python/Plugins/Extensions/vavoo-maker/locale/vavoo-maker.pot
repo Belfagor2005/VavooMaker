@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-20 15:18+0100\n"
+"POT-Creation-Date: 2025-11-28 18:46+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -20,102 +20,167 @@ msgstr ""
 "X-Poedit-SearchPath-0: plugin.py\n"
 "X-Poedit-SearchPath-1: __init__.py\n"
 
-#: plugin.py:111
+#: plugin.py:128
 msgid "Countries"
 msgstr ""
 
-#: plugin.py:112
+#: plugin.py:129
 msgid "Categories"
 msgstr ""
 
-#: plugin.py:139
-msgid "vavoo"
+#: plugin.py:144
+msgid "interval"
 msgstr ""
 
-#: plugin.py:442
-msgid "vavoo playlists"
+#: plugin.py:144
+msgid "fixed time"
 msgstr ""
 
-#: plugin.py:446
-msgid "Downloading playlist - Please wait!"
+#: plugin.py:287
+msgid "Back"
 msgstr ""
 
-#: plugin.py:448 plugin.py:611
-msgid "Cancel"
+#: plugin.py:288 plugin.py:370
+msgid "Save"
 msgstr ""
 
-#: plugin.py:450
-msgid "Toggle all"
+#: plugin.py:319
+#, python-format
+msgid "Last channel update: %s"
 msgstr ""
 
-#: plugin.py:451
-msgid "Remove"
+#: plugin.py:327
+msgid "Scheduled Bouquet Update:"
 msgstr ""
 
-#: plugin.py:503
-msgid "Select Items for Export"
+#: plugin.py:329
+msgid "Active Automatic Bouquet Update"
 msgstr ""
 
-#: plugin.py:504
-msgid "Create bouquets"
+#: plugin.py:334
+msgid "Schedule type:"
 msgstr ""
 
-#: plugin.py:517
-msgid "Creating bouquets"
+#: plugin.py:336
+msgid "At an interval of hours or at a fixed time"
 msgstr ""
 
-#: plugin.py:518
-msgid "Creating bouquets. This may take some time. Please be patient."
+#: plugin.py:340
+msgid "Update interval (minutes):"
 msgstr ""
 
-#: plugin.py:537
-msgid "Please select the bouquets you wish to create."
+#: plugin.py:342
+msgid "Configure every interval of minutes from now"
 msgstr ""
 
-#: plugin.py:542
-msgid "Do you want to create the bouquets?"
+#: plugin.py:346
+msgid "Time to start update:"
 msgstr ""
 
-#: plugin.py:556
+#: plugin.py:348
+msgid "Configure at a fixed time"
+msgstr ""
+
+#: plugin.py:360
+msgid "SELECT YOUR CHOICE"
+msgstr ""
+
+#: plugin.py:429
+msgid "Configuration saved successfully!"
+msgstr ""
+
+#: plugin.py:451 plugin.py:882
 msgid "Really close without saving settings?"
 msgstr ""
 
-#: plugin.py:566
+#: plugin.py:476
+msgid "vavoo"
+msgstr ""
+
+#: plugin.py:758
+msgid "vavoo playlists"
+msgstr ""
+
+#: plugin.py:762
+msgid "Downloading playlist - Please wait!"
+msgstr ""
+
+#: plugin.py:764 plugin.py:936
+msgid "Cancel"
+msgstr ""
+
+#: plugin.py:767
+msgid "Remove"
+msgstr ""
+
+#: plugin.py:819
+msgid "Create bouquets"
+msgstr ""
+
+#: plugin.py:820
+msgid "Toggle all"
+msgstr ""
+
+#: plugin.py:821
+msgid "Select Items for Export"
+msgstr ""
+
+#: plugin.py:834
+msgid "Creating bouquets"
+msgstr ""
+
+#: plugin.py:835
+msgid "Creating bouquets. This may take some time. Please be patient."
+msgstr ""
+
+#: plugin.py:854
+msgid "Please select the bouquets you wish to create."
+msgstr ""
+
+#: plugin.py:859
+msgid "Do you want to create the bouquets?"
+msgstr ""
+
+#: plugin.py:891
 msgid ""
 "Reloading Bouquets and Services...\n"
 "\n"
 "All Vavoo Favorite Bouquets removed."
 msgstr ""
 
-#: plugin.py:568
+#: plugin.py:893
 msgid "Operation cancelled."
 msgstr ""
 
-#: plugin.py:573
+#: plugin.py:898
 msgid "Remove all Vavoo Favorite Bouquets?"
 msgstr ""
 
-#: plugin.py:607
+#: plugin.py:932
 msgid "Select View Type"
 msgstr ""
 
-#: plugin.py:612
+#: plugin.py:937
 msgid "OK"
 msgstr ""
 
-#: plugin.py:620
+#: plugin.py:945
 msgid "View by Countries"
 msgstr ""
 
-#: plugin.py:621
+#: plugin.py:946
 msgid "View by Categories"
 msgstr ""
 
-#: plugin.py:622
+#: plugin.py:947
+msgid "Setup"
+msgstr ""
+
+#: plugin.py:948
 msgid "Plugin Info"
 msgstr ""
 
-#: plugin.py:652
+#: plugin.py:984
 #, python-format
 msgid ""
 "Vavoo Maker Playlists v%s\n"
@@ -128,6 +193,19 @@ msgid ""
 "           Corvoboys.org"
 msgstr ""
 
-#: plugin.py:679
-msgid "Make IPTV bouquets based on Vavoo Team"
+#: plugin.py:1147
+msgid "Bouquets updated successfully!"
+msgstr ""
+
+#: plugin.py:1157
+#, python-format
+msgid "Error during bouquet update: %s"
+msgstr ""
+
+#: plugin.py:1193
+msgid "Vavoo Stream Live"
+msgstr ""
+
+#: plugin.py:1199
+msgid "Create IPTV bouquets based on Vavoo Team"
 msgstr ""

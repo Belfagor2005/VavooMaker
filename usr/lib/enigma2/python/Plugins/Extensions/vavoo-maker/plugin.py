@@ -5,7 +5,7 @@
 #########################################################
 #                                                       #
 #  Vavoo Maker Playlists Plugin                         #
-#  Version: 1.2                                         #
+#  Version: 1.3                                         #
 #  Created by Lululla (https://github.com/Belfagor2005) #
 #  License: CC BY-NC-SA 4.0                             #
 #  https://creativecommons.org/licenses/by-nc-sa/4.0    #
@@ -24,7 +24,7 @@
 """
 
 __author__ = "Lululla"
-__version__ = "1.2"
+__version__ = "1.3"
 __license__ = "CC BY-NC-SA 4.0"
 __credits__ = ["Linuxsat-support.com", "Corvoboys Forum"]
 __maintainer__ = "Lululla"
@@ -36,7 +36,7 @@ __status__ = "Production"
 # =========================
 import json
 import codecs
-from time import time
+import time
 from sys import version_info
 from os import (
     listdir as os_listdir,
@@ -44,6 +44,7 @@ from os import (
     path as os_path,
     remove as os_remove,
 )
+
 from shutil import rmtree
 
 # =========================
@@ -56,13 +57,19 @@ from requests import get, exceptions
 # =========================
 from enigma import eTimer
 from Components.ActionMap import ActionMap
+from Components.Label import Label
 from Components.Sources.StaticText import StaticText
+from Components.ConfigList import ConfigListScreen
 from Components.config import (
-    config,
-    ConfigSubsection,
     ConfigSelection,
+    getConfigListEntry,
+    ConfigSelectionNumber,
+    ConfigClock,
     ConfigText,
     configfile,
+    config,
+    ConfigYesNo,
+    ConfigSubsection
 )
 from Components.MenuList import MenuList
 from Plugins.Plugin import PluginDescriptor
@@ -91,34 +98,365 @@ from . import (
     unquote,
     pickle,
 )
-
 from .vavoo_lib import (
     sanitizeFilename,
     getAuthSignature,
     decodeHtml,
     rimuovi_parentesi,
+    trace_error
 )
 
 tempDir = "/tmp/vavoo"
 if not os_path.exists(tempDir):
     os_makedirs(tempDir)
 
+
 PLUGIN_PATH = resolveFilename(SCOPE_PLUGINS, "Extensions/{}".format('vavoo-maker'))
+PYTHON_VER = version_info.major
+
+_session = None
+auto_start_timer = None
+
+# =========================
+# Configurazione - usa cfg.
+# =========================
 config.plugins.vavoomaker = ConfigSubsection()
-config.plugins.vavoomaker = ConfigSubsection()
+cfg = config.plugins.vavoomaker
+
+# Scelte per il tipo di visualizzazione
 choices = {
     "country": _("Countries"),
     "categories": _("Categories")
 }
-config.plugins.vavoomaker.current = ConfigSelection(
+cfg.current = ConfigSelection(
     choices=[(x[0], x[1]) for x in choices.items()],
     default=list(choices.keys())[0]
 )
+
+# Configurazione per ogni tipo
 for ch in choices:
-    setattr(config.plugins.vavoomaker, ch, ConfigText("", False))
+    setattr(cfg, ch, ConfigText("", False))
+
+# Configurazione timer aggiornamento automatico
+cfg.autobouquetupdate = ConfigYesNo(default=False)
+cfg.timetype = ConfigSelection(
+    default="interval",
+    choices=[("interval", _("interval")), ("fixed time", _("fixed time"))]
+)
+cfg.updateinterval = ConfigSelectionNumber(default=10, min=5, max=3600, stepwidth=5)
+cfg.fixedtime = ConfigClock(default=46800)  # 13:00
+cfg.last_update = ConfigText(default="Never")
 
 
-PYTHON_VER = version_info.major
+def check_current_config():
+    print("=== VAVOO CONFIG STATUS ===")
+    print("autobouquetupdate:", cfg.autobouquetupdate.value)
+    print("timetype:", cfg.timetype.value)
+    print("updateinterval:", cfg.updateinterval.value)
+    print("fixedtime:", cfg.fixedtime.value)
+    print("last_update:", cfg.last_update.value)
+    print("===========================")
+
+
+check_current_config()
+
+
+def get_favorite_file():
+    """Get the favorite file path in plugin directory"""
+    favorite_path = os_path.join(PLUGIN_PATH, 'Favorite.txt')
+    # Ensure plugin directory exists and is writable
+    if not os_path.exists(PLUGIN_PATH):
+        try:
+            os_makedirs(PLUGIN_PATH, 0o755)
+        except:
+            pass
+
+    return favorite_path
+
+
+def save_bouquets_to_favorite(enabled_bouquets, view_type):
+    """Save exported bouquets to Favorite.txt file"""
+    favorite_file = get_favorite_file()
+    try:
+        with open(favorite_file, 'w') as f:
+            for bouquet in enabled_bouquets:
+                line = "%s|%s|%d\n" % (bouquet, view_type, int(time.time()))
+                f.write(line)
+        print("[vavoo plugin] Saved %d bouquets to Favorite.txt" % len(enabled_bouquets))
+    except Exception as e:
+        print("[vavoo plugin] Error saving to Favorite.txt: %s" % str(e))
+
+
+def load_bouquets_from_favorite():
+    """Load saved bouquets from Favorite.txt"""
+    favorite_file = get_favorite_file()
+    bouquets = []
+
+    try:
+        if os_path.exists(favorite_file):
+            with open(favorite_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and '|' in line:
+                        parts = line.split('|')
+                        if len(parts) >= 2:
+                            bouquets.append({
+                                'name': parts[0],
+                                'view_type': parts[1],
+                                'timestamp': parts[2] if len(parts) > 2 else '0'
+                            })
+        print("[vavoo plugin] Loaded %d bouquets from Favorite.txt" % len(bouquets))
+    except Exception as e:
+        print("[vavoo plugin] Error loading from Favorite.txt: %s" % str(e))
+
+    return bouquets
+
+
+class vavoo_maker_config(Screen, ConfigListScreen):
+    if os_path.exists("/usr/bin/apt-get"):
+        skin = '''
+        <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
+            <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
+            <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+            <!-- /* time -->
+            <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+            <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                <convert type="ClockToText">Default</convert>
+            </widget>
+            <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                <convert type="ClockToText">Date</convert>
+            </widget>
+            <widget name="version" position="1136,327" size="100,30" zPosition="1" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
+            <widget name="statusbar" position="44,649" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
+            <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+            <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
+            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
+            <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+            <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+            <widget name="config" position="40,100" size="550,524" itemHeight="35" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+            <widget name="description" position="621,599" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+            <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
+            <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                <convert type="ServiceName">Name</convert>
+            </widget>
+            <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+        </screen>'''
+
+    else:
+        skin = '''
+            <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
+                <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
+                <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                <!-- /* time -->
+                <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+                <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                    <convert type="ClockToText">Default</convert>
+                </widget>
+                <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                    <convert type="ClockToText">Date</convert>
+                </widget>
+                <widget name="version" position="973,180" size="100,30" zPosition="9" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
+                <widget name="statusbar" position="44,644" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
+                <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
+                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget name="config" position="40,100" size="550,524" itemHeight="35" font="Regular;34" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                <widget name="description" position="621,599" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,107" size="512,256" zPosition="5" />
+                <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                    <convert type="ServiceName">Name</convert>
+                </widget>
+                <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+            </screen>'''
+
+    def __init__(self, session):
+        Screen.__init__(self, session)
+        self.session = session
+        self.setup_title = ('Vavoo Maker Config')
+        self.list = []
+        self.onChangedEntry = []
+        self["version"] = Label()
+        self['statusbar'] = Label()
+        self["description"] = Label("")
+        self["red"] = Label(_("Back"))
+        self["green"] = Label(_("Save"))
+        self['actions'] = ActionMap(['OkCancelActions', 'ColorActions', 'DirectionActions'], {
+            "cancel": self.extnok,
+            "left": self.keyLeft,
+            "right": self.keyRight,
+            "up": self.keyUp,
+            "down": self.keyDown,
+            "red": self.extnok,
+            "green": self.save,
+            "ok": self.keyOK,
+        }, -1)
+        self.update_status()
+        ConfigListScreen.__init__(
+            self,
+            self.list,
+            session=self.session,
+            on_change=self.changedEntry)
+        self.createSetup()
+        self.showhide()
+        self.onLayoutFinish.append(self.layoutFinished)
+
+    def layoutFinished(self):
+        self.setTitle(self.setup_title)
+        self['version'].setText('V.' + __version__)
+
+    def keyOK(self):
+        pass
+
+    def update_status(self):
+        if cfg.autobouquetupdate:
+            self['statusbar'].setText(
+                _("Last channel update: %s") %
+                cfg.last_update.value)
+
+    def createSetup(self):
+        self.list = []
+        indent = "- "
+        self.list.append(
+            getConfigListEntry(
+                _("Scheduled Bouquet Update:"),
+                cfg.autobouquetupdate,  # USA cfg.
+                _("Active Automatic Bouquet Update")))
+
+        if cfg.autobouquetupdate.value is True:  # USA cfg.
+            self.list.append(
+                getConfigListEntry(
+                    indent + _("Schedule type:"),
+                    cfg.timetype,  # USA cfg.
+                    _("At an interval of hours or at a fixed time")))
+            if cfg.timetype.value == "interval":  # USA cfg.
+                self.list.append(
+                    getConfigListEntry(
+                        2 * indent + _("Update interval (minutes):"),
+                        cfg.updateinterval,  # USA cfg.
+                        _("Configure every interval of minutes from now")))
+            if cfg.timetype.value == "fixed time":  # USA cfg.
+                self.list.append(
+                    getConfigListEntry(
+                        2 * indent + _("Time to start update:"),
+                        cfg.fixedtime,  # USA cfg.
+                        _("Configure at a fixed time")))
+
+        self["config"].list = self.list
+        self["config"].l.setList(self.list)
+        self.setInfo()
+
+    def setInfo(self):
+        try:
+            sel = self['config'].getCurrent()[2]
+            if sel:
+                self['description'].setText(str(sel))
+            else:
+                self['description'].setText(_('SELECT YOUR CHOICE'))
+            return
+        except Exception as error:
+            print('error as:', error)
+            trace_error()
+
+    def changedEntry(self):
+        for x in self.onChangedEntry:
+            x()
+        self['green'].instance.setText(
+            _('Save') if self['config'].isChanged() else '- - - -')
+
+    def getCurrentEntry(self):
+        return self["config"].getCurrent()[0]
+
+    def showhide(self):
+        pass
+
+    def getCurrentValue(self):
+        return str(self["config"].getCurrent()[1].getText())
+
+    def createSummary(self):
+        from Screens.Setup import SetupSummary
+        return SetupSummary
+
+    def keyLeft(self):
+        ConfigListScreen.keyLeft(self)
+        # sel = self["config"].getCurrent()[1]  # Keep for future debug
+        self.createSetup()
+        self.showhide()
+
+    def keyRight(self):
+        ConfigListScreen.keyRight(self)
+        # sel = self["config"].getCurrent()[1]  # Keep for future debug
+        self.createSetup()
+        self.showhide()
+
+    def keyDown(self):
+        self['config'].instance.moveSelection(self['config'].instance.moveDown)
+        self.createSetup()
+        self.showhide()
+
+    def keyUp(self):
+        self['config'].instance.moveSelection(self['config'].instance.moveUp)
+        self.createSetup()
+        self.showhide()
+
+    def save(self):
+        if self["config"].isChanged():
+            for x in self["config"].list:
+                x[1].save()
+
+            configfile.save()
+
+            # FORCE config reload
+            try:
+                config.loadFromFile(configfile.CONFIG_FILE)
+            except:
+                pass
+
+            # RESTART timer
+            global auto_start_timer
+            if auto_start_timer is not None:
+                auto_start_timer.update()
+            else:
+                auto_start_timer = AutoStartTimer(self.session)
+
+            self.session.open(
+                MessageBox,
+                _("Configuration saved successfully!"),
+                MessageBox.TYPE_INFO,
+                timeout=5
+            )
+
+            self.close()
+
+    def _safe_config_reload(self):
+        """Safe configuration reload"""
+        try:
+            if not hasattr(config.plugins, 'vavoomaker'):
+                config.plugins.vavoomaker = ConfigSubsection()
+                print("Recreated vavoo config section")
+
+            config.loadFromFile(configfile.CONFIG_FILE)
+        except Exception as e:
+            print("Safe config reload failed: " + str(e))
+
+    def extnok(self, answer=None):
+        if answer is None:
+            if self['config'].isChanged():
+                self.session.openWithCallback(
+                    self.extnok, MessageBox, _("Really close without saving settings?"))
+            else:
+                self.close()
+        elif answer:
+            for x in self["config"].list:
+                x[1].cancel()
+            self.close()
+        else:
+            return
 
 
 class vavooFetcher():
@@ -141,11 +479,14 @@ class vavooFetcher():
         if os_path.exists(self.cachefile):
             try:
                 mtime = os_path.getmtime(self.cachefile)
-                if mtime < time() - 86400:  # if file is older than one day delete it
+                if mtime < time.time() - 86400:  # if file is older than one day delete it
                     os_remove(self.cachefile)
                 else:
                     with open(self.cachefile, 'rb') as cache_input:
-                        self.playlists_processed = pickle.load(cache_input)
+                        if PYTHON_VER == 3:
+                            self.playlists_processed = pickle.load(cache_input, encoding='bytes')
+                        else:
+                            self.playlists_processed = pickle.load(cache_input)
             except Exception as e:
                 print("[vavoo plugin] failed to open cache file", e)
 
@@ -354,17 +695,16 @@ class SetupMaker(Screen):
                 <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
                     <convert type="ClockToText">Date</convert>
                 </widget>
-               
                 <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_yellow.png" position="620,486" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_blue.png" position="620,534" size="30,30" alphatest="blend" transparent="1" />
-                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="1" />
-                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="1" />
-                <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="1" />
-                <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="1" />
+                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
                 <widget name="config" position="40,100" size="550,585" itemHeight="35" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
                 <widget name="description" position="610,604" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
                 <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
@@ -389,17 +729,16 @@ class SetupMaker(Screen):
                 <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
                     <convert type="ClockToText">Date</convert>
                 </widget>
-               
                 <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_yellow.png" position="620,486" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_blue.png" position="620,534" size="30,30" alphatest="blend" transparent="1" />
-                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="1" />
-                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="1" />
-                <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="1" />
-                <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="1" />
+                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
                 <widget name="config" position="40,100" size="550,585" itemHeight="35" font="Regular; 30" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
                 <widget name="description" position="610,604" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
                 <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
@@ -524,8 +863,17 @@ class SetupMaker(Screen):
         )
 
     def doRun(self):
+        # Create bouquets
         self.vavooFetcher.createBouquet(self.enabled)
-        # self.close()
+
+        # DEBUG: Check what we're saving
+        print("[DEBUG] Saving bouquets to favorite:")
+        print("[DEBUG] Enabled bouquets:", self.enabled)
+        print("[DEBUG] View type:", self.view_type)
+
+        save_bouquets_to_favorite(self.enabled, self.view_type)
+
+        # Close the screen
         self.cancelConfirm(True)
 
     def backCancel(self):
@@ -533,7 +881,6 @@ class SetupMaker(Screen):
         if any([getattr(config.plugins.vavoomaker, choice).isChanged() for choice in choices]):
             self.session.openWithCallback(self.cancelConfirm, MessageBox, _("Really close without saving settings?"))
         else:
-            # self.close()
             self.cancelConfirm(True)
 
     def deleteBouquets(self):
@@ -574,8 +921,8 @@ class CategorySelector(Screen):
             <eLabel backgroundColor="#001a2336" position="7,578" size="777,4" zPosition="10" />
             <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="29,595" size="30,30" alphatest="blend" transparent="1" />
             <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="428,595" size="30,30" alphatest="blend" transparent="1" />
-            <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="65,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="1" />
-            <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="465,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="1" />
+            <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="65,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+            <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="465,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
         </screen>
     """
 
@@ -597,6 +944,7 @@ class CategorySelector(Screen):
 
         self.list.append((_("View by Countries"), "countries"))
         self.list.append((_("View by Categories"), "categories"))
+        self.list.append((_("Setup"), "setup"))
         self.list.append((_("Plugin Info"), "info"))
         self["list"].setList(self.list)
 
@@ -606,6 +954,9 @@ class CategorySelector(Screen):
             view_type = selection[1]
             if view_type == "info":
                 self.show_about()
+                return
+            elif view_type == "setup":
+                self.go_vavoo_maker_config()
                 return
             else:
                 self.close(view_type)
@@ -623,6 +974,9 @@ class CategorySelector(Screen):
             "license": __license__,
             "credits": __credits__
         }
+
+    def go_vavoo_maker_config(self):
+        self.session.open(vavoo_maker_config)
 
     def show_about(self):
         info = self.get_plugin_info()
@@ -646,12 +1000,237 @@ def PluginMain(session, **kwargs):
 
 
 def onViewTypeSelected(session, view_type):
-    if view_type:
-        config.plugins.vavoomaker.current.value = view_type
+    """Manages selection from the main menu"""
+    if view_type in ["countries", "categories"]:
+        cfg.current.value = view_type
         return session.open(SetupMaker, view_type=view_type)
+    elif view_type == "setup":
+        return None
+    elif view_type == "info":
+        return None
     else:
         return None
 
 
+class AutoStartTimer:
+    def __init__(self, session):
+        print("*** AutoStartTimer INIT ***")
+        print("*** AutoUpdate enabled:", cfg.autobouquetupdate.value)
+        print("*** Timer type:", cfg.timetype.value)
+        print("*** Update interval:", cfg.updateinterval.value)
+
+        self.session = session
+        self.timer = eTimer()
+        try:
+            self.timer.callback.append(self.on_timer)
+        except BaseException:
+            self.timer_conn = self.timer.timeout.connect(self.on_timer)
+        self.timer.start(100, True)
+        self.update()
+
+    def update(self, constant=0):
+        self.timer.stop()
+        wake = self.get_wake_time()
+        nowt = time.time()
+
+        print("*** Next wake time:", wake)
+        print("*** Current time:", nowt)
+        print("*** Wake in seconds:", wake - nowt if wake > 0 else "DISABLED")
+
+        if wake > 0:
+            if wake < nowt + constant:
+                if cfg.timetype.value == "interval":
+                    interval = int(cfg.updateinterval.value)
+                    wake += interval * 60
+                elif cfg.timetype.value == "fixed time":
+                    wake += 86400
+            next_time = wake - int(nowt)
+            if next_time > 3600:
+                next_time = 3600
+            if next_time <= 0:
+                next_time = 60
+
+            print("*** Timer set for:", next_time, "seconds")
+            self.timer.startLongTimer(next_time)
+        else:
+            wake = -1
+            print("*** Timer DISABLED")
+        return wake
+
+    def get_wake_time(self):
+        if cfg.autobouquetupdate.value is True:
+            if cfg.timetype.value == "interval":
+                interval = int(cfg.updateinterval.value)
+                nowt = time.time()
+                return int(nowt) + interval * 60
+            if cfg.timetype.value == "fixed time":
+                ftc = cfg.fixedtime.value
+                now = time.localtime(time.time())
+                fwt = int(time.mktime((
+                    now.tm_year,
+                    now.tm_mon,
+                    now.tm_mday,
+                    ftc[0],
+                    ftc[1],
+                    now.tm_sec,
+                    now.tm_wday,
+                    now.tm_yday,
+                    now.tm_isdst
+                )))
+                return fwt
+        else:
+            return -1
+
+    def on_timer(self):
+        self.timer.stop()
+        now = int(time.time())
+        wake = now
+        constant = 0
+        if cfg.timetype.value == "fixed time":
+            wake = self.get_wake_time()
+        if abs(wake - now) < 60:
+            try:
+                self.startMain()
+                constant = 60
+                localtime = time.asctime(time.localtime(time.time()))
+                cfg.last_update.value = localtime
+                cfg.last_update.save()
+            except Exception as error:
+                print("Error in AutoStartTimer:", error)
+        self.update(constant)
+
+    def startMain(self):
+        """Update all bouquets saved in Favorite.txt"""
+        if self.session is None:
+            print("AutoStartTimer: No session available, running in background")
+
+        favorite_file = get_favorite_file()
+
+        if not os_path.exists(favorite_file):
+            print("Favorite.txt not found - no bouquets to update")
+            return
+
+        try:
+            bouquets_to_update = load_bouquets_from_favorite()
+
+            if not bouquets_to_update:
+                print("No bouquets found in Favorite.txt")
+                return
+
+            print("Scheduled update for " + str(len(bouquets_to_update)) + " bouquets")
+
+            for bouquet_info in bouquets_to_update:
+                bouquet_name = bouquet_info['name']
+                view_type = bouquet_info['view_type']
+
+                print("Updating bouquet: " + bouquet_name + " (type: " + view_type + ")")
+
+                cfg.current.value = view_type
+
+                fetcher = vavooFetcher()
+                fetcher.getPlaylist()
+
+                enabled_list = [bouquet_name]
+                fetcher.createBouquet(enabled_list)
+
+                print("Successfully updated: " + bouquet_name)
+
+            localtime = time.asctime(time.localtime(time.time()))
+            cfg.last_update.value = localtime
+            cfg.last_update.save()
+
+            print("All bouquets updated successfully")
+
+            if self.session is not None:
+                self.session.open(
+                    MessageBox,
+                    _("Bouquets updated successfully!"),
+                    MessageBox.TYPE_INFO,
+                    timeout=5
+                )
+
+        except Exception as e:
+            print("Error during scheduled update:", e)
+            if self.session is not None:
+                self.session.open(
+                    MessageBox,
+                    _("Error during bouquet update: %s") % str(e),
+                    MessageBox.TYPE_ERROR,
+                    timeout=5
+                )
+
+
+def autostart(reason, session=None, **kwargs):
+    global auto_start_timer
+    global _session
+
+    if reason == 0 and _session is None:
+        if session is not None:
+            _session = session
+            if auto_start_timer is None:
+                auto_start_timer = AutoStartTimer(session)
+
+    elif reason == 1:
+        if session is not None and _session is None:
+            _session = session
+            if auto_start_timer is None:
+                auto_start_timer = AutoStartTimer(session)
+
+    return
+
+
+def get_next_wakeup():
+    """Returns the next wakeup for the timer"""
+    if cfg.autobouquetupdate.value:
+        auto_timer = AutoStartTimer(None)
+        return auto_timer.get_wake_time()
+    return -1
+
+
+def cfgmain(menuid, **kwargs):
+    """Adds entry to main menu"""
+    if menuid == "mainmenu":
+        return [(_('Vavoo Stream Live'), PluginMain, 'VavooMaker', 55)]
+    else:
+        return []
+
+
 def Plugins(**kwargs):
-    return [PluginDescriptor(name="Vavoo Maker v.%s" % __version__, description=_("Make IPTV bouquets based on Vavoo Team"), where=PluginDescriptor.WHERE_PLUGINMENU, icon="icon.png", needsRestart=True, fnc=PluginMain)]
+    plugin_description = _("Create IPTV bouquets based on Vavoo Team")
+    plugin_icon = "icon.png"
+
+    result = []
+
+    # Main menu
+    main_descriptor = PluginDescriptor(
+        name="Vavoo Maker v.%s" % __version__,
+        description=plugin_description,
+        where=PluginDescriptor.WHERE_MENU,
+        icon=plugin_icon,
+        fnc=cfgmain
+    )
+
+    # Plugin menu
+    plugin_menu_descriptor = PluginDescriptor(
+        name="Vavoo Maker v.%s" % __version__,
+        description=plugin_description,
+        where=PluginDescriptor.WHERE_PLUGINMENU,
+        icon=plugin_icon,
+        fnc=PluginMain,
+        needsRestart=True,
+    )
+
+    # Autostart
+    autostart_descriptor = PluginDescriptor(
+        name="Vavoo Maker v.%s" % __version__,
+        description=plugin_description,
+        where=[
+            PluginDescriptor.WHERE_AUTOSTART,
+            PluginDescriptor.WHERE_SESSIONSTART
+        ],
+        fnc=autostart,
+        wakeupfnc=get_next_wakeup
+    )
+
+    result.extend([main_descriptor, plugin_menu_descriptor, autostart_descriptor])
+    return result

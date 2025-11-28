@@ -1,7 +1,7 @@
 #!/bin/bash
 
-version='1.2'
-changelog='\nRecode all sources'
+version='1.3'
+changelog='Add Timer Update Bouquet'
 
 TMPPATH=/tmp/VavooMaker-install
 FILEPATH=/tmp/VavooMaker-main.tar.gz
