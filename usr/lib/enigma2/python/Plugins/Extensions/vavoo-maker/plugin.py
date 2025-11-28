@@ -246,7 +246,7 @@ class vavoo_maker_config(Screen, ConfigListScreen):
 
     else:
         skin = '''
-            <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
+            <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="Setup Vavoo Maker" backgroundColor="transparent" flags="wfNoBorder" zPosition="-10">
                 <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
                 <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <!-- /* time -->
@@ -261,14 +261,14 @@ class vavoo_maker_config(Screen, ConfigListScreen):
                 <widget name="statusbar" position="44,644" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
                 <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
-                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
-                <widget name="config" position="40,100" size="550,524" itemHeight="35" font="Regular;34" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="643,466" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="644,512" size="30,30" alphatest="blend" transparent="1" />
+                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="676,461" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="676,506" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget name="config" position="30,100" size="606,524" itemHeight="32" font="Regular;34" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
                 <widget name="description" position="621,599" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
                 <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,107" size="512,256" zPosition="5" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="732,100" size="512,256" zPosition="5" />
                 <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
                     <convert type="ServiceName">Name</convert>
                 </widget>
@@ -364,10 +364,11 @@ class vavoo_maker_config(Screen, ConfigListScreen):
             trace_error()
 
     def changedEntry(self):
+        self.item = self["config"].getCurrent()
         for x in self.onChangedEntry:
             x()
-        self['green'].instance.setText(
-            _('Save') if self['config'].isChanged() else '- - - -')
+        # self['green'].instance.setText(
+            # _('Save') if self['config'].isChanged() else '- - - -')
 
     def getCurrentEntry(self):
         return self["config"].getCurrent()[0]
@@ -1190,7 +1191,7 @@ def get_next_wakeup():
 def cfgmain(menuid, **kwargs):
     """Adds entry to main menu"""
     if menuid == "mainmenu":
-        return [(_('Vavoo Stream Live'), PluginMain, 'VavooMaker', 55)]
+        return [(_('Vavoo Maker'), PluginMain, 'VavooMaker', 11)]
     else:
         return []
 
