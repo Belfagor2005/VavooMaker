@@ -148,6 +148,19 @@ cfg.fixedtime = ConfigClock(default=46800)  # 13:00
 cfg.last_update = ConfigText(default="Never")
 
 
+def get_screen_width():
+    """Get current screen width"""
+    try:
+        from enigma import getDesktop
+        desktop = getDesktop(0)
+        width = desktop.size().width()
+        print("[vUtils] Screen width detected: %d" % width)
+        return width
+    except Exception as e:
+        print("[vUtils] Error getting screen width: %s" % str(e))
+        return 1920  # Default FHD
+
+
 def check_current_config():
     print("=== VAVOO CONFIG STATUS ===")
     print("autobouquetupdate:", cfg.autobouquetupdate.value)
@@ -212,41 +225,14 @@ def load_bouquets_from_favorite():
     return bouquets
 
 
-class vavoo_maker_config(Screen, ConfigListScreen):
-    if os_path.exists("/usr/bin/apt-get"):
-        skin = '''
-        <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
-            <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
-            <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
-            <!-- /* time -->
-            <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
-            <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
-                <convert type="ClockToText">Default</convert>
-            </widget>
-            <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
-                <convert type="ClockToText">Date</convert>
-            </widget>
-            <widget name="version" position="1136,327" size="100,30" zPosition="1" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
-            <widget name="statusbar" position="44,649" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
-            <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
-            <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
-            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
-            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
-            <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
-            <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
-            <widget name="config" position="40,100" size="550,524" itemHeight="35" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
-            <widget name="description" position="621,599" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
-            <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
-            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
-            <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
-                <convert type="ServiceName">Name</convert>
-            </widget>
-            <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
-        </screen>'''
+screen_width = get_screen_width()
 
-    else:
-        skin = '''
-            <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="Setup Vavoo Maker" backgroundColor="transparent" flags="wfNoBorder" zPosition="-10">
+
+class vavoo_maker_config(Screen, ConfigListScreen):
+    if screen_width >= 1920:
+        if os_path.exists("/usr/bin/apt-get"):
+            skin = '''
+            <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
                 <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
                 <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <!-- /* time -->
@@ -257,23 +243,115 @@ class vavoo_maker_config(Screen, ConfigListScreen):
                 <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
                     <convert type="ClockToText">Date</convert>
                 </widget>
-                <widget name="version" position="973,180" size="100,30" zPosition="9" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
-                <widget name="statusbar" position="44,644" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
+                <widget name="version" position="1136,327" size="100,30" zPosition="1" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
+                <widget name="statusbar" position="44,649" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
                 <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="643,466" size="30,30" alphatest="blend" transparent="1" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="644,512" size="30,30" alphatest="blend" transparent="1" />
-                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="676,461" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="676,506" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
-                <widget name="config" position="30,100" size="606,524" itemHeight="32" font="Regular;34" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
+                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget name="config" position="40,100" size="550,524" itemHeight="35" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
                 <widget name="description" position="621,599" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
                 <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="732,100" size="512,256" zPosition="5" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
                 <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
                     <convert type="ServiceName">Name</convert>
                 </widget>
                 <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
             </screen>'''
+
+        else:
+            skin = '''
+                <screen name="vavoo_maker_config" position="center,center" size="1920,1080" title="Setup Vavoo Maker" backgroundColor="transparent" flags="wfNoBorder" zPosition="-10">
+                    <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
+                    <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <!-- /* time -->
+                    <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Default</convert>
+                    </widget>
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Date</convert>
+                    </widget>
+                    <widget name="version" position="973,180" size="100,30" zPosition="9" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
+                    <widget name="statusbar" position="44,644" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
+                    <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="643,466" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="644,512" size="30,30" alphatest="blend" transparent="1" />
+                    <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="676,461" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="676,506" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                    <widget name="config" position="30,100" size="606,524" itemHeight="32" font="Regular;34" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                    <widget name="description" position="621,599" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                    <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="732,100" size="512,256" zPosition="5" />
+                    <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                        <convert type="ServiceName">Name</convert>
+                    </widget>
+                    <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+                </screen>'''
+    else:
+        if os_path.exists("/usr/bin/apt-get"):
+            skin = '''
+                <screen name="vavoo_maker_config" position="center,center" size="1280,720" title="Setup Vavoo Maker" backgroundColor="transparent" flags="wfNoBorder" zPosition="-10">
+                    <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="0,0" size="1280,720" zPosition="-99" />
+                    <eLabel name="" position="11,10" size="1260,700" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <!-- /* time -->
+                    <eLabel name="" position="30,24" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Default</convert>
+                    </widget>
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Date</convert>
+                    </widget>
+                    <widget name="version" position="1075,157" size="100,30" zPosition="9" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
+                    <widget name="statusbar" position="34,644" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
+                    <eLabel name="" position="22,20" size="1244,670" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="643,466" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="644,512" size="30,30" alphatest="blend" transparent="1" />
+                    <widget backgroundColor="#9f1313" font="Regular; 26" halign="left" position="676,461" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#1f771f" font="Regular; 26" halign="left" position="676,506" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                    <widget name="config" position="30,100" size="606,524" itemHeight="32" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                    <widget name="description" position="621,599" size="635,81" font="Regular; 28" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                    <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="732,100" size="512,256" zPosition="5" />
+                    <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                        <convert type="ServiceName">Name</convert>
+                    </widget>
+                    <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+                </screen>'''
+        else:
+            skin = '''
+                <screen name="vavoo_maker_config" position="center,center" size="1280,720" title="Setup Vavoo Maker" backgroundColor="transparent" flags="wfNoBorder" zPosition="-10">
+                    <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="0,0" size="1280,720" zPosition="-99" />
+                    <eLabel name="" position="11,10" size="1260,700" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <!-- /* time -->
+                    <eLabel name="" position="30,24" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Default</convert>
+                    </widget>
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Date</convert>
+                    </widget>
+                    <widget name="version" position="1075,157" size="100,30" zPosition="9" backgroundColor="#30000000" transparent="1" font="Regular; 20" halign="center" foregroundColor="#ffffff" />
+                    <widget name="statusbar" position="34,644" size="830,40" font="Regular; 24" foregroundColor="yellow" backgroundColor="#101010" transparent="1" zPosition="3" />
+                    <eLabel name="" position="22,20" size="1244,670" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="643,466" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="644,512" size="30,30" alphatest="blend" transparent="1" />
+                    <widget backgroundColor="#9f1313" font="Regular; 26" halign="left" position="676,461" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#1f771f" font="Regular; 26" halign="left" position="676,506" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                    <widget name="config" position="30,100" size="606,524" itemHeight="32" font="Regular;34" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                    <widget name="description" position="621,599" size="635,81" font="Regular; 28" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                    <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="732,100" size="512,256" zPosition="5" />
+                    <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                        <convert type="ServiceName">Name</convert>
+                    </widget>
+                    <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+                </screen>'''
 
     def __init__(self, session):
         Screen.__init__(self, session)
@@ -412,7 +490,6 @@ class vavoo_maker_config(Screen, ConfigListScreen):
 
             configfile.save()
 
-            # FORCE config reload
             try:
                 config.loadFromFile(configfile.CONFIG_FILE)
             except:
@@ -683,73 +760,140 @@ class vavooFetcher():
 
 
 class SetupMaker(Screen):
-    if os_path.exists("/usr/bin/apt-get"):
-        skin = '''
-            <screen name="SetupMaker" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
-                <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
-                <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
-                <!-- /* time -->
-                <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
-                <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
-                    <convert type="ClockToText">Default</convert>
-                </widget>
-                <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
-                    <convert type="ClockToText">Date</convert>
-                </widget>
-                <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
-                <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_yellow.png" position="620,486" size="30,30" alphatest="blend" transparent="1" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_blue.png" position="620,534" size="30,30" alphatest="blend" transparent="1" />
-                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
-                <widget name="config" position="40,100" size="550,585" itemHeight="35" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
-                <widget name="description" position="610,604" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
-                <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
-                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
-                <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
-                    <convert type="ServiceName">Name</convert>
-                </widget>
-                <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
-            </screen>
-            '''
+    if screen_width >= 1920:
 
+        if os_path.exists("/usr/bin/apt-get"):
+            skin = '''
+                <screen name="SetupMaker" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
+                    <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
+                    <eLabel name="" position="26,30" size="1240,697" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <!-- /* time -->
+                    <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Default</convert>
+                    </widget>
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,41" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Date</convert>
+                    </widget>
+                    <eLabel name="" position="33,36" size="1230,663" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_yellow.png" position="620,486" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_blue.png" position="620,534" size="30,30" alphatest="blend" transparent="1" />
+                    <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
+                    <widget name="config" position="40,100" size="550,585" itemHeight="35" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                    <widget name="description" position="610,604" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                    <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
+                    <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                        <convert type="ServiceName">Name</convert>
+                    </widget>
+                    <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+                </screen>
+                '''
+
+        else:
+            skin = '''
+                <screen name="SetupMaker" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
+                    <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
+                    <eLabel name="" position="26,30" size="1240,697" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <!-- /* time -->
+                    <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Default</convert>
+                    </widget>
+                    <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,41" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                        <convert type="ClockToText">Date</convert>
+                    </widget>
+                    <eLabel name="" position="33,36" size="1230,663" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                    <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_yellow.png" position="620,486" size="30,30" alphatest="blend" transparent="1" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_blue.png" position="620,534" size="30,30" alphatest="blend" transparent="1" />
+                    <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
+                    <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
+                    <widget name="config" position="40,100" size="550,585" itemHeight="35" font="Regular; 30" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                    <widget name="description" position="610,604" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                    <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+                    <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
+                    <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                        <convert type="ServiceName">Name</convert>
+                    </widget>
+                    <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+                </screen>
+                '''
     else:
-        skin = '''
-            <screen name="SetupMaker" position="center,center" size="1920,1080" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
-                <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="19,22" size="1255,711" zPosition="-99" />
-                <eLabel name="" position="31,30" size="1220,683" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+        if os_path.exists("/usr/bin/apt-get"):
+            skin = '''
+            <screen name="SetupMaker" position="center,center" size="1280,720" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
+                <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="0,0" size="1280,720" zPosition="-99" />
+                <eLabel name="" position="10,10" size="1263,701" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <!-- /* time -->
                 <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
-                <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="1107,40" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                <widget backgroundColor="#00171a1c" font="Regular; 30" halign="right" position="1107,35" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
                     <convert type="ClockToText">Default</convert>
                 </widget>
-                <widget backgroundColor="#00171a1c" font="Regular;34" halign="right" position="731,38" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                <widget backgroundColor="#00171a1c" font="Regular; 30" halign="right" position="736,35" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
                     <convert type="ClockToText">Date</convert>
                 </widget>
-                <eLabel name="" position="22,30" size="1244,690" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                <eLabel name="" position="20,16" size="1245,689" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
                 <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_yellow.png" position="620,486" size="30,30" alphatest="blend" transparent="1" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_blue.png" position="620,534" size="30,30" alphatest="blend" transparent="1" />
-                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#a08500" font="Regular;30" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
-                <widget backgroundColor="#18188b" font="Regular;30" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
-                <widget name="config" position="40,100" size="550,585" itemHeight="35" font="Regular; 30" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
-                <widget name="description" position="610,604" size="635,81" font="Regular; 32" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                <widget backgroundColor="#9f1313" font="Regular; 24" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular; 24" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#a08500" font="Regular; 24" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#18188b" font="Regular; 24" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
+                <widget name="config" position="40,100" size="550,585" itemHeight="35" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                <widget name="description" position="610,604" size="635,81" font="Regular; 26" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
                 <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
                 <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
-                <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular;26" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular; 20" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
                     <convert type="ServiceName">Name</convert>
                 </widget>
                 <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
-            </screen>
-            '''
+            </screen>'''
+        else:
+            skin = '''
+            <screen name="SetupMaker" position="center,center" size="1280,720" title="SetupMaker" backgroundColor="transparent" flags="wfNoBorder">
+                <eLabel backgroundColor="#002d3d5b" cornerRadius="20" position="0,0" size="1280,720" zPosition="-99" />
+                <eLabel name="" position="10,10" size="1263,701" zPosition="-90" cornerRadius="18" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                <!-- /* time -->
+                <eLabel name="" position="30,34" size="700,52" backgroundColor="#00171a1c" halign="center" valign="center" transparent="0" font="Regular; 36" zPosition="1" text="VAVOO MAKER BY LULULLA" foregroundColor="#007fcfff" />
+                <widget backgroundColor="#00171a1c" font="Regular; 30" halign="right" position="1107,35" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="120,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                    <convert type="ClockToText">Default</convert>
+                </widget>
+                <widget backgroundColor="#00171a1c" font="Regular; 30" halign="right" position="736,35" render="Label" shadowColor="#00000000" shadowOffset="-2,-2" size="400,40" source="global.CurrentTime" transparent="1" zPosition="3">
+                    <convert type="ClockToText">Date</convert>
+                </widget>
+                <eLabel name="" position="20,16" size="1245,689" zPosition="-90" backgroundColor="#00171a1c" foregroundColor="#00171a1c" />
+                <eLabel backgroundColor="#001a2336" position="34,90" size="1220,3" zPosition="10" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="619,386" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="619,434" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_yellow.png" position="620,486" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_blue.png" position="620,534" size="30,30" alphatest="blend" transparent="1" />
+                <widget backgroundColor="#9f1313" font="Regular; 24" halign="left" position="660,380" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular; 24" halign="left" position="660,430" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#a08500" font="Regular; 24" halign="left" position="660,480" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_yellow" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#18188b" font="Regular; 24" halign="left" position="661,530" size="250,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_blue" transparent="1" valign="center" zPosition="3" />
+                <widget name="config" position="40,100" size="550,585" itemHeight="35" font="Regular; 30" enableWrapAround="1" transparent="0" zPosition="9" scrollbarMode="showOnDemand" />
+                <widget name="description" position="610,604" size="635,81" font="Regular; 26" halign="center" foregroundColor="#00ffffff" transparent="1" zPosition="3" />
+                <eLabel backgroundColor="#00fffffe" position="35,695" size="1200,3" zPosition="10" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="616,109" size="512,256" zPosition="5" />
+                <widget source="session.CurrentService" render="Label" position="915,561" size="350,34" font="Regular; 20" borderWidth="1" backgroundColor="background" transparent="1" halign="center" foregroundColor="white" zPosition="30" valign="center" noWrap="1">
+                    <convert type="ServiceName">Name</convert>
+                </widget>
+                <widget source="session.VideoPicture" render="Pig" position="936,375" zPosition="20" size="300,180" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+            </screen>'''
 
     def __init__(self, session, view_type=None):
         Screen.__init__(self, session)
@@ -912,20 +1056,37 @@ class SetupMaker(Screen):
 
 
 class CategorySelector(Screen):
-    skin = """
-        <screen position="center,center" size="800,650" title="Vavoo Main" flags="wfNoBorder">
-            <widget name="list" position="310,70" size="250,150" scrollbarMode="showNever" itemHeight="35" />
-            <eLabel name="" position="167,19" size="500,40" backgroundColor="#ff000000" halign="center" valign="center" transparent="1" cornerRadius="26" font="Regular; 28" zPosition="1" text="Select Cowntry for Export" foregroundColor="#fe00" />
-            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/kofi.png" position="40,270" size="250,250" zPosition="5" />
-            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/paypal.png" position="520,270" size="250,250" zPosition="5" />
-            <eLabel name="" position="161,528" size="500,40" backgroundColor="#ff000000" halign="center" valign="center" transparent="1" cornerRadius="26" font="Regular; 28" zPosition="1" text="Offer Coffe" foregroundColor="#fe00" />
-            <eLabel backgroundColor="#001a2336" position="7,578" size="777,4" zPosition="10" />
-            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="29,595" size="30,30" alphatest="blend" transparent="1" />
-            <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="428,595" size="30,30" alphatest="blend" transparent="1" />
-            <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="65,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
-            <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="465,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
-        </screen>
-    """
+    if screen_width >= 1920:
+        skin = """
+            <screen position="center,center" size="1280,720" title="Vavoo Main" flags="wfNoBorder">
+                <widget name="list" position="310,70" size="250,150" scrollbarMode="showNever" itemHeight="35" />
+                <eLabel name="" position="167,19" size="500,40" backgroundColor="#ff000000" halign="center" valign="center" transparent="1" cornerRadius="26" font="Regular; 28" zPosition="1" text="Select Cowntry for Export" foregroundColor="#fe00" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/kofi.png" position="74,263" size="250,250" zPosition="5" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/paypal.png" position="463,262" size="250,250" zPosition="5" />
+                <eLabel name="" position="161,528" size="500,40" backgroundColor="#ff000000" halign="center" valign="center" transparent="1" cornerRadius="26" font="Regular; 28" zPosition="1" text="Offer Coffe" foregroundColor="#fe00" />
+                <eLabel backgroundColor="#001a2336" position="22,577" size="718,5" zPosition="10" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="29,595" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="403,595" size="30,30" alphatest="blend" transparent="1" />
+                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="65,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="440,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+                <widget source="session.VideoPicture" render="Pig" position="733,62" zPosition="19" size="520,308" backgroundColor="transparent" transparent="0" cornerRadius="14" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/log.png" position="742,397" size="512,256" zPosition="5" />
+            </screen>"""
+    else:
+        skin = """
+            <screen position="center,center" size="800,650" title="Vavoo Main" flags="wfNoBorder">
+                <widget name="list" position="310,70" size="250,150" scrollbarMode="showNever" itemHeight="35" />
+                <eLabel name="" position="167,19" size="500,40" backgroundColor="#ff000000" halign="center" valign="center" transparent="1" cornerRadius="26" font="Regular; 28" zPosition="1" text="Select Cowntry for Export" foregroundColor="#fe00" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/kofi.png" position="40,270" size="250,250" zPosition="5" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/paypal.png" position="520,270" size="250,250" zPosition="5" />
+                <eLabel name="" position="161,528" size="500,40" backgroundColor="#ff000000" halign="center" valign="center" transparent="1" cornerRadius="26" font="Regular; 28" zPosition="1" text="Offer Coffe" foregroundColor="#fe00" />
+                <eLabel backgroundColor="#001a2336" position="7,578" size="777,4" zPosition="10" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_red.png" position="29,595" size="30,30" alphatest="blend" transparent="1" />
+                <ePixmap pixmap="/usr/lib/enigma2/python/Plugins/Extensions/vavoo-maker/icons/key_green.png" position="428,595" size="30,30" alphatest="blend" transparent="1" />
+                <widget backgroundColor="#9f1313" font="Regular;30" halign="left" position="65,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_red" transparent="1" valign="center" zPosition="3" />
+                <widget backgroundColor="#1f771f" font="Regular;30" halign="left" position="465,590" size="300,40" render="Label" shadowColor="black" shadowOffset="-2,-2" source="key_green" transparent="1" valign="center" zPosition="3" />
+            </screen>
+        """
 
     def __init__(self, session):
         Screen.__init__(self, session)
